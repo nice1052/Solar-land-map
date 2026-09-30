@@ -102,7 +102,7 @@
     <div class="legend" id="legend">
       <div class="hdr" id="legendHdr"><span>범례</span><span id="legendArrow">▾</span></div>
       <div class="body">
-        <div class="row"><span class="ic x">✕</span><div><b>설치 불가</b><small>국립공원 · 문화유산구역(역사문화환경보존지역·등록문화재 포함) · 농업진흥구역 · 상수원보호구역 · 개발제한구역 · 산림보호구역 · 지목 임야</small></div></div>
+        <div class="row"><span class="ic x">✕</span><div><b>설치 불가</b><small>국립공원 · 문화유산구역(역사문화환경보존지역·등록문화재 포함) · 농업진흥구역 · 상수원보호구역 · 개발제한구역 · 산림보호구역<br>지목: 임야 · 구거 · 유지 · 도로 · 대지 · 하천 · 학교용지 · 수도용지</small></div></div>
         <div class="row"><span class="ic lb">123 전</span><div><b>그 외 필지</b><small>지번·지목 표시 (초록 = 농지 · 농업보호구역은 가능, 우클릭 시 표시)</small></div></div>
         <div class="tip">🖱️ 지도 우클릭 → 주소 확인·복사</div>
       </div>
@@ -394,8 +394,9 @@
     });
   }
   function clearParcels(){ parcelGroup.clearLayers(); markGroup.clearLayers(); parcels = {}; }
-  // 지목 자체로 설치 불가인 경우 (임야)
-  function jimokHits(jimok){ return jimok === '임' ? [{ level:'no', name:'지목 임야' }] : []; }
+  // 지목 자체로 설치 불가인 경우 (임야·구거·유지·도로·대지·하천·학교용지·수도용지)
+  var BLOCK_JIMOK = { '임':1, '구':1, '유':1, '도':1, '대':1, '천':1, '학':1, '수':1 };
+  function jimokHits(jimok){ return BLOCK_JIMOK[jimok] ? [{ level:'no', name:'지목 ' + JIMOK[jimok] }] : []; }
   function classifyParcel(rec){
     if(!rec.pt){ rec.verdict = { level:'ok', names:[] }; return; }
     rec.verdict = verdictOf(zonesAt(rec.pt[0], rec.pt[1]).concat(jimokHits(rec.jb.jimok)));
