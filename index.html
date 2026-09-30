@@ -43,6 +43,15 @@
   .legend .x{color:var(--no);font-size:16px;line-height:1.1;}
   .legend .w{width:16px;height:14px;margin:2px;border:2px dashed var(--warn);background:rgba(242,154,31,.2);border-radius:3px;}
   .legend .lb{font-size:10.5px;background:rgba(0,0,0,.72);color:#fff;border-radius:4px;padding:0 4px;width:auto;}
+  .legend .sw{width:16px;height:14px;margin:2px;border:1px solid rgba(0,0,0,.3);border-radius:3px;}
+  .legend .modes{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0 8px;font-size:11.5px;font-weight:600;}
+  .legend .seg{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;}
+  .legend .seg button{font-size:11px;padding:4px 9px;border:none;background:#fff;color:var(--ink);cursor:pointer;}
+  .legend .seg button + button{border-left:1px solid var(--line);}
+  .legend .seg button.on{background:var(--ink);color:#fff;}
+  .legend .zonelegend{display:none;border-top:1px solid var(--line);margin-top:6px;padding-top:6px;}
+  .legend .zonelegend.show{display:block;}
+  .legend .zl-title{font-weight:700;font-size:11.5px;margin-bottom:2px;}
   .legend .tip{border-top:1px solid var(--line);margin-top:6px;padding-top:6px;color:var(--muted);font-size:11px;}
   .legend .hdr{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:12.5px;cursor:pointer;}
   .legend.collapsed .body{display:none;}
@@ -102,9 +111,23 @@
     <div class="legend" id="legend">
       <div class="hdr" id="legendHdr"><span>범례</span><span id="legendArrow">▾</span></div>
       <div class="body">
-        <div class="row"><span class="ic x">✕</span><div><b>설치 불가</b><small>국립공원 · 문화유산구역(역사문화환경보존지역·등록문화재 포함) · 농업진흥구역 · 상수원보호구역 · 개발제한구역 · 산림보호구역<br>지목: 임야 · 구거 · 유지 · 도로 · 대지 · 하천 · 학교용지 · 수도용지</small></div></div>
+        <div class="modes"><span>불가지역 표시</span>
+          <div class="seg" id="modeSeg">
+            <button type="button" data-mode="light" class="on">연하게</button>
+            <button type="button" data-mode="strong">진하게</button>
+            <button type="button" data-mode="hide">가리기</button>
+          </div>
+        </div>
+        <div class="row"><span class="ic x">✕</span><div><b>설치 불가</b><small>국립공원 · 문화유산구역(역사문화환경보존지역·등록문화재 포함) · 농업진흥구역 · 상수원보호구역 · 개발제한구역 · 산림보호구역<br>지목: 임야 · 묘지 · 구거 · 유지 · 도로 · 대지 · 하천 · 학교용지 · 수도용지 · 공장용지 · 제방 · 공원</small></div></div>
         <div class="row"><span class="ic lb">123 전</span><div><b>그 외 필지</b><small>지번·지목 표시 (초록 = 농지 · 농업보호구역은 가능, 우클릭 시 표시)</small></div></div>
-        <div class="tip">🖱️ 지도 우클릭 → 주소 확인·복사</div>
+        <div class="zonelegend" id="zoneLegend">
+          <div class="zl-title">용도지역 색 의미</div>
+          <div class="row"><span class="ic sw" style="background:#F5E36A;"></span><div><b>도시지역</b><small>주거·상업·공업·녹지지역. 주거지역 가까이는 이격거리 규제에 걸리기 쉬움</small></div></div>
+          <div class="row"><span class="ic sw" style="background:#F2B8A8;"></span><div><b>관리지역</b><small>계획·생산·보전관리지역. 태양광이 가장 많이 들어서는 지역 (보전관리는 조건부)</small></div></div>
+          <div class="row"><span class="ic sw" style="background:#B9F2E5;"></span><div><b>자연환경보전지역</b><small>자연 보전이 목적이라 태양광 설치가 매우 어려움</small></div></div>
+          <div class="row"><span class="ic sw" style="background:transparent;"></span><div><b>색 없음 = 농림지역</b><small>농지·산지 보전 목적. 농업진흥구역·보전산지 여부를 따로 확인</small></div></div>
+        </div>
+        <div class="tip">🖱️ 지도 우클릭 → 주소·용도지역 확인, 주소 복사</div>
       </div>
     </div>
   </main>
@@ -262,9 +285,13 @@
 
   // ---------- 지도 ----------
   var map = L.map('map', { preferCanvas:true, zoomControl:true, minZoom:6, maxZoom:19 }).setView([36.3, 127.8], 7);
+  // 지명·도로명 레이어는 불가지역 색칠보다 위에 오도록 별도 층에 둠 (클릭은 통과)
+  map.createPane('labels');
+  map.getPane('labels').style.zIndex = 450;
+  map.getPane('labels').style.pointerEvents = 'none';
   var satLayer = L.layerGroup([
     L.tileLayer('https://api.vworld.kr/req/wmts/1.0.0/' + VWORLD_KEY + '/Satellite/{z}/{y}/{x}.jpeg', { maxZoom:19, attribution:'© VWorld' }),
-    L.tileLayer('https://api.vworld.kr/req/wmts/1.0.0/' + VWORLD_KEY + '/Hybrid/{z}/{y}/{x}.png', { maxZoom:19 })
+    L.tileLayer('https://api.vworld.kr/req/wmts/1.0.0/' + VWORLD_KEY + '/Hybrid/{z}/{y}/{x}.png', { maxZoom:19, pane:'labels' })
   ]).addTo(map);
   var baseLayer = L.tileLayer('https://api.vworld.kr/req/wmts/1.0.0/' + VWORLD_KEY + '/Base/{z}/{y}/{x}.png', { maxZoom:19, attribution:'© VWorld' });
   var zoningWms = L.tileLayer.wms('https://api.vworld.kr/req/wms', {
@@ -276,12 +303,13 @@
   function setBase(sat){
     if(sat){ map.removeLayer(baseLayer); satLayer.addTo(map); } else { map.removeLayer(satLayer); baseLayer.addTo(map); }
     btnSat.classList.toggle('on', sat); btnMap.classList.toggle('on', !sat);
-    satLayer.eachLayer(function(l){ l.bringToBack(); }); baseLayer.bringToBack();
+    baseLayer.bringToBack();
   }
   btnSat.addEventListener('click', function(){ setBase(true); });
   btnMap.addEventListener('click', function(){ setBase(false); });
   document.getElementById('chkZone').addEventListener('change', function(e){
     if(e.target.checked) zoningWms.addTo(map); else map.removeLayer(zoningWms);
+    document.getElementById('zoneLegend').classList.toggle('show', e.target.checked);
   });
   var chkLabel = document.getElementById('chkLabel');
   chkLabel.addEventListener('change', refreshParcelMarks);
@@ -330,8 +358,9 @@
           var p = f.properties || {};
           var z = { level:def.level(p), name:def.name(p), polys:polys, bbox:bboxOf(polys) };
           zones[f.id] = z;
-          L.polygon(toLatLngs(polys), Object.assign({ interactive:true }, ZONE_STYLE[z.level]))
-            .bindTooltip((z.level === 'no' ? '🚫 설치 불가 · ' : '⚠️ 주의 · ') + z.name, { sticky:true })
+          var zl = L.polygon(toLatLngs(polys), Object.assign({ interactive:true }, ZONE_STYLE[z.level]));
+          zl.zLevel = z.level;
+          zl.bindTooltip((z.level === 'no' ? '🚫 설치 불가 · ' : '⚠️ 주의 · ') + z.name, { sticky:true })
             .on('contextmenu', onContext)
             .addTo(zoneGroup);
         });
@@ -369,6 +398,35 @@
     warn: { color:'#F29A1F', weight:1.5, opacity:0.95, fillColor:'#F29A1F', fillOpacity:0.18 },
     no:   { color:'#E0312B', weight:1.2, opacity:0.9, fillColor:'#E0312B', fillOpacity:0.1 }
   };
+
+  // ---------- 불가지역 표시 방식 (연하게 / 진하게 / 가리기) ----------
+  var MODES = {
+    light:  { zone:{ color:'#E0312B', weight:2.5, opacity:1, fillColor:'#E0312B', fillOpacity:0.2 },
+              no:{ color:'#E0312B', weight:1.2, opacity:0.9, fillColor:'#E0312B', fillOpacity:0.1 },
+              ok:{ color:'#ffffff', weight:1, opacity:0.75, fillOpacity:0 }, showX:true },
+    strong: { zone:{ color:'#C4231D', weight:2.5, opacity:1, fillColor:'#C4231D', fillOpacity:0.5 },
+              no:{ color:'#C4231D', weight:1.2, opacity:0.9, fillColor:'#C4231D', fillOpacity:0.35 },
+              ok:{ color:'#ffffff', weight:1.3, opacity:0.9, fillOpacity:0 }, showX:true },
+    hide:   { zone:{ color:'#151515', weight:1, opacity:0.9, fillColor:'#151515', fillOpacity:0.8 },
+              no:{ color:'#151515', weight:1, opacity:0.9, fillColor:'#151515', fillOpacity:0.75 },
+              ok:{ color:'#5BE37A', weight:2, opacity:1, fillColor:'#5BE37A', fillOpacity:0.1 }, showX:false }
+  };
+  var mode = 'light';
+  try{ var saved = localStorage.getItem('landmap.mode'); if(MODES[saved]) mode = saved; }catch(e){}
+  function applyMode(m){
+    mode = m;
+    ZONE_STYLE.no = MODES[m].zone;
+    PARCEL_STYLE.no = MODES[m].no;
+    PARCEL_STYLE.ok = MODES[m].ok;
+    zoneGroup.eachLayer(function(l){ l.setStyle(ZONE_STYLE[l.zLevel]); });
+    document.querySelectorAll('#modeSeg button').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-mode') === m); });
+    try{ localStorage.setItem('landmap.mode', m); }catch(e){}
+    classifyAllParcels();
+  }
+  document.querySelectorAll('#modeSeg button').forEach(function(b){
+    b.addEventListener('click', function(){ applyMode(b.getAttribute('data-mode')); });
+  });
+  applyMode(mode);
   function loadParcels(){
     if(map.getZoom() < PARCEL_ZOOM){ return; }
     var gen = ++parcelGen, box = viewBox(0.1);
@@ -395,7 +453,7 @@
   }
   function clearParcels(){ parcelGroup.clearLayers(); markGroup.clearLayers(); parcels = {}; }
   // 지목 자체로 설치 불가인 경우 (임야·구거·유지·도로·대지·하천·학교용지·수도용지)
-  var BLOCK_JIMOK = { '임':1, '구':1, '유':1, '도':1, '대':1, '천':1, '학':1, '수':1 };
+  var BLOCK_JIMOK = { '임':1, '구':1, '유':1, '도':1, '대':1, '천':1, '학':1, '수':1, '장':1, '묘':1, '제':1, '공':1 };
   function jimokHits(jimok){ return BLOCK_JIMOK[jimok] ? [{ level:'no', name:'지목 ' + JIMOK[jimok] }] : []; }
   function classifyParcel(rec){
     if(!rec.pt){ rec.verdict = { level:'ok', names:[] }; return; }
@@ -418,7 +476,7 @@
       var w = Math.abs(p2.x - p1.x), h = Math.abs(p2.y - p1.y);
       var html;
       if(r.verdict && r.verdict.level === 'no'){
-        if(Math.min(w, h) < 14) return;
+        if(!MODES[mode].showX || Math.min(w, h) < 14) return;
         var size = Math.max(12, Math.min(28, Math.min(w, h) * 0.5));
         html = '<div class="px" style="font-size:' + size.toFixed(0) + 'px">✕</div>';
       } else {
@@ -467,6 +525,24 @@
     return '<div class="line"><div><span class="k">' + label + '</span><span class="v">' + escapeHtml(value) + '</span></div>' +
       '<button type="button" data-copy="' + (copyStore.length - 1) + '">복사</button></div>';
   }
+  // 용도지역 이름 → 태양광 관점의 한 줄 설명
+  function zoningDesc(name){
+    var rules = [
+      [/계획관리/, '태양광 설치가 비교적 쉬운 지역'],
+      [/생산관리/, '농업 생산 목적 · 조건부 가능'],
+      [/보전관리/, '보전 목적 · 조건부 가능 (심사 까다로움)'],
+      [/관리지역/, '관리지역 (세분 전) · 조건부 가능'],
+      [/농림/, '농지·산지 보전 목적 · 농업진흥구역·보전산지 여부 확인'],
+      [/자연환경보전/, '자연 보전 목적 · 설치 매우 어려움'],
+      [/자연녹지/, '도시 외곽 녹지 · 조건부 가능'],
+      [/생산녹지|보전녹지/, '녹지 보전 목적 · 설치 제한적'],
+      [/주거/, '주거지역 · 이격거리 규제로 지상형은 어려움'],
+      [/상업|공업/, '건물·공장 지붕형 위주'],
+      [/도시지역/, '도시지역 (세분 전)']
+    ];
+    for(var i = 0; i < rules.length; i++){ if(rules[i][0].test(name)) return rules[i][1]; }
+    return '';
+  }
   function onContext(e){
     if(e.originalEvent) e.originalEvent.preventDefault();
     L.DomEvent.stopPropagation(e);  // 구역·필지 위에서 우클릭해도 한 번만 처리
@@ -480,6 +556,11 @@
       Promise.allSettled(ZONE_DEFS.map(function(def){
         return fetchFeatures(def.data, pt, { filter:def.filter, size:10 }, 1).then(function(res){
           return res.features.map(function(f){ var p = f.properties || {}; return { level:def.level(p), name:def.name(p) }; });
+        });
+      })),
+      Promise.allSettled(['LT_C_UQ111', 'LT_C_UQ112', 'LT_C_UQ113', 'LT_C_UQ114'].map(function(d){
+        return fetchFeatures(d, pt, { size:3 }, 1).then(function(res){
+          return res.features.map(function(f){ return (f.properties || {}).uname; }).filter(Boolean);
         });
       }))
     ]).then(function(r){
@@ -502,11 +583,16 @@
       var hits = jimokHits(jimokCode);
       if(r[3].status === 'fulfilled') r[3].value.forEach(function(x){ if(x.status === 'fulfilled') hits = hits.concat(x.value); });
       var v = verdictOf(hits);
+      var zoning = [];
+      if(r[4].status === 'fulfilled') r[4].value.forEach(function(x){ if(x.status === 'fulfilled') zoning = zoning.concat(x.value); });
+      zoning = uniq(zoning);
       copyStore = [];
       var html = '<div class="ctx">' +
         line('지번 주소', parcelAddr) +
         line('도로명 주소', roadAddr) +
         (jimokText ? '<div class="line"><div><span class="k">지목</span><span class="v">' + escapeHtml(jimokText) + '</span></div></div>' : '') +
+        (zoning.length ? '<div class="line"><div><span class="k">용도지역</span><span class="v">' + escapeHtml(zoning.join(' · ')) + '</span>' +
+          '<span class="k">' + escapeHtml(zoningDesc(zoning[0])) + '</span></div></div>' : '') +
         line('좌표 (위도, 경도)', lat.toFixed(6) + ', ' + lon.toFixed(6));
       if(!parcelAddr && !roadAddr) html += '<div class="line"><span class="k">이 위치의 주소를 찾지 못했습니다 (바다·하천 등).</span></div>';
       if(v.level === 'no') html += '<div class="verdict no">🚫 설치 불가<small>' + escapeHtml(v.names.join(' · ')) + '</small></div>';
