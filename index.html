@@ -102,8 +102,8 @@
     <div class="legend" id="legend">
       <div class="hdr" id="legendHdr"><span>범례</span><span id="legendArrow">▾</span></div>
       <div class="body">
-        <div class="row"><span class="ic x">✕</span><div><b>설치 불가</b><small>국립공원 · 문화유산구역(역사문화환경보존지역·등록문화재 포함) · 농업진흥구역 · 상수원보호구역 · 개발제한구역 · 산림보호구역</small></div></div>
-        <div class="row"><span class="ic lb">123 전</span><div><b>그 외 필지</b><small>지번·지목 표시 (초록 = 농지, 농업보호구역은 가능)</small></div></div>
+        <div class="row"><span class="ic x">✕</span><div><b>설치 불가</b><small>국립공원 · 문화유산구역(역사문화환경보존지역·등록문화재 포함) · 농업진흥구역 · 상수원보호구역 · 개발제한구역 · 산림보호구역 · 지목 임야</small></div></div>
+        <div class="row"><span class="ic lb">123 전</span><div><b>그 외 필지</b><small>지번·지목 표시 (초록 = 농지 · 농업보호구역은 가능, 우클릭 시 표시)</small></div></div>
         <div class="tip">🖱️ 지도 우클릭 → 주소 확인·복사</div>
       </div>
     </div>
@@ -394,9 +394,11 @@
     });
   }
   function clearParcels(){ parcelGroup.clearLayers(); markGroup.clearLayers(); parcels = {}; }
+  // 지목 자체로 설치 불가인 경우 (임야)
+  function jimokHits(jimok){ return jimok === '임' ? [{ level:'no', name:'지목 임야' }] : []; }
   function classifyParcel(rec){
     if(!rec.pt){ rec.verdict = { level:'ok', names:[] }; return; }
-    rec.verdict = verdictOf(zonesAt(rec.pt[0], rec.pt[1]));
+    rec.verdict = verdictOf(zonesAt(rec.pt[0], rec.pt[1]).concat(jimokHits(rec.jb.jimok)));
     rec.poly.setStyle(PARCEL_STYLE[rec.verdict.level]);
   }
   function classifyAllParcels(){
@@ -473,6 +475,7 @@
     Promise.allSettled([
       vworldReverse(lat, lon),
       fetchFeatures('LP_PA_CBND_BUBUN', pt, { size:1 }, 1),
+      fetchFeatures('LT_C_AGRIXUE101', pt, { filter:'uname:=:농업보호구역', size:1 }, 1),
       Promise.allSettled(ZONE_DEFS.map(function(def){
         return fetchFeatures(def.data, pt, { filter:def.filter, size:10 }, 1).then(function(res){
           return res.features.map(function(f){ var p = f.properties || {}; return { level:def.level(p), name:def.name(p) }; });
@@ -486,15 +489,17 @@
           if(it.type === 'road' && !roadAddr) roadAddr = it.text;
         });
       }
-      var jimokText = '';
+      var jimokText = '', jimokCode = '';
       if(r[1].status === 'fulfilled' && r[1].value.features.length){
         var pp = r[1].value.features[0].properties || {};
         var jb = parseJibun(pp.jibun);
         if(pp.addr) parcelAddr = pp.addr;
         if(jb.jimok) jimokText = JIMOK[jb.jimok] + (JIMOK[jb.jimok] !== jb.jimok ? ' (' + jb.jimok + ')' : '');
+        jimokCode = jb.jimok;
       }
-      var hits = [];
-      if(r[2].status === 'fulfilled') r[2].value.forEach(function(x){ if(x.status === 'fulfilled') hits = hits.concat(x.value); });
+      if(r[2].status === 'fulfilled' && r[2].value.features.length) jimokText = (jimokText ? jimokText + ' · ' : '') + '농업보호구역';
+      var hits = jimokHits(jimokCode);
+      if(r[3].status === 'fulfilled') r[3].value.forEach(function(x){ if(x.status === 'fulfilled') hits = hits.concat(x.value); });
       var v = verdictOf(hits);
       copyStore = [];
       var html = '<div class="ctx">' +
