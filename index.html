@@ -24,6 +24,8 @@
   .toggles label,.toggles button{font-size:12px;padding:6px 10px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink);cursor:pointer;display:flex;align-items:center;gap:5px;user-select:none;}
   .toggles button.on{background:var(--ink);color:#fff;border-color:var(--ink);}
   .toggles input{margin:0;}
+  .toggles a.navbtn{font-size:12px;font-weight:600;padding:6px 12px;border-radius:999px;border:1px solid var(--accent);background:var(--accent);color:#fff;text-decoration:none;white-space:nowrap;}
+  .toggles a.navbtn:hover{opacity:.9;}
   #dropdown{position:absolute;top:100%;left:0;right:46px;margin-top:4px;background:var(--surface);border:1px solid var(--line);border-radius:8px;max-height:260px;overflow:auto;z-index:1000;box-shadow:0 8px 20px rgba(0,0,0,.12);}
   #dropdown.hidden{display:none;}
   #dropdown .item{padding:8px 10px;font-size:12.5px;cursor:pointer;border-bottom:1px solid var(--line);}
@@ -91,6 +93,7 @@
       <button type="button" id="baseMap">일반</button>
       <label><input type="checkbox" id="chkZone"> 용도지역 색</label>
       <label><input type="checkbox" id="chkLabel" checked> 지번·지목</label>
+      <a class="navbtn" href="https://nice1052.github.io/solar-site-review/" target="_blank" rel="noopener">☀️ 부지 진단하기</a>
     </div>
   </header>
   <main>
